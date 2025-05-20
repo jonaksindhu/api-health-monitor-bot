@@ -7,6 +7,11 @@ import com.healthmonitor.api.model.HealthCheckResult;
 import io.restassured.RestAssured;
 import io.restassured.response.Response;
 import lombok.extern.slf4j.Slf4j;
+import com.networknt.schema.JsonSchema;
+import com.networknt.schema.JsonSchemaFactory;
+import com.networknt.schema.SpecVersion;
+import com.networknt.schema.ValidationMessage;
+import com.fasterxml.jackson.databind.JsonNode;
 
 import java.io.File;
 import java.io.IOException;
@@ -69,28 +74,41 @@ public class HealthChecker {
         try {
             Response response = RestAssured.given()
                     .when()
-                    .request(endpoint.getMethod(), endpoint.getUrl());
-
-            result.setStatusCode(response.getStatusCode());
-            result.setResponseTime(System.currentTimeMillis() - startTime);
-
-            if (endpoint.getSchema() != null) {
-                validateSchema(endpoint.getSchema(), response.getBody().asString(), result);
-            } else {
-                result.setSchemaValid(true);
-            }
+                    .get(endpoint.getUrl());
+            long endTime = System.currentTimeMillis();
+            long responseTime = endTime - startTime;
+            int statusCode = response.getStatusCode();
+            String responseBody = response.getBody().asString();
+            boolean schemaValid = validateSchema(responseBody, endpoint.getSchema());
+            result = new HealthCheckResult(endpoint.getUrl(), statusCode, responseTime, schemaValid, null);
+            logResult(result);
+            return result;
         } catch (Exception e) {
-            result.setError(e.getMessage());
-            result.setResponseTime(System.currentTimeMillis() - startTime);
+            long endTime = System.currentTimeMillis();
+            long responseTime = endTime - startTime;
+            HealthCheckResult errorResult = new HealthCheckResult(endpoint.getUrl(), 0, responseTime, false, e.getMessage());
+            logResult(errorResult);
+            return errorResult;
         }
-
-        return result;
     }
 
-    private void validateSchema(String schemaPath, String responseBody, HealthCheckResult result) {
-        // Implement schema validation logic here
-        // This is a placeholder for actual schema validation
-        result.setSchemaValid(true);
+    private boolean validateSchema(String responseBody, String schemaPath) {
+        try {
+            // Load schema as string
+            File schemaFile = new File("schemas", schemaPath);
+            String schemaContent = new String(java.nio.file.Files.readAllBytes(schemaFile.toPath()));
+            JsonSchemaFactory factory = JsonSchemaFactory.getInstance(SpecVersion.VersionFlag.V7);
+            JsonSchema schema = factory.getSchema(schemaContent);
+
+            // Parse response
+            JsonNode jsonNode = objectMapper.readTree(responseBody);
+
+            // Validate
+            java.util.Set<ValidationMessage> errors = schema.validate(jsonNode);
+            return errors.isEmpty();
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     private void logResult(HealthCheckResult result) {
