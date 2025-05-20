@@ -1,0 +1,6 @@
+com/healthmonitor/api/ApiHealthMonitorApplication.class
+com/healthmonitor/api/HealthChecker$1.class
+com/healthmonitor/api/model/Endpoint.class
+com/healthmonitor/api/model/HealthCheckResult.class
+com/healthmonitor/api/HealthChecker.class
+com/healthmonitor/api/service/HealthMonitorService.class

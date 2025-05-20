@@ -1,0 +1,19 @@
+{
+  "endpoints": [
+    {
+      "url": "https://api.coindesk.com/v1/bpi/currentprice/USD.json",
+      "method": "GET",
+      "schema": "coindesk.schema.json"
+    },
+    {
+      "url": "https://api.github.com/repos/octocat/Hello-World",
+      "method": "GET",
+      "schema": "github-repo.schema.json"
+    },
+    {
+      "url": "https://api.open-meteo.com/v1/forecast?latitude=35&longitude=139&current_weather=true",
+      "method": "GET",
+      "schema": "open-meteo.schema.json"
+    }
+  ]
+} 
